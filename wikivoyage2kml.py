@@ -242,11 +242,11 @@ def create_kml(dest, add_locations, lang):
 
 def main():
     # Args parsing
-    parser = argparse.ArgumentParser(description='Create KML files for maps.me from Wikivoyage articles')
+    parser = argparse.ArgumentParser(description='Create KML/KMZ files for maps.me from Wikivoyage articles')
     parser.add_argument('destination', help='Destination name')
     parser.add_argument('-z', '--kmz', action="store_true", default=False, help='Save output to KMZ format')
     parser.add_argument('-a', '--add', action="store_true", default=False, help='Add missing locations')
-    parser.add_argument('-l', '--language', default='en', help='Language of the Wikivoyage article')
+    parser.add_argument('-l', '--language', default='en', help='Language of the Wikivoyage article, defaults to en')
     args = parser.parse_args()
 
     kml = create_kml(args.destination, args.add, args.language)
