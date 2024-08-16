@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "wikivoyage2kml"
+version = "0.1.0"
+description = "Create KML files from wikivoyage articles"
+authors = ["JorgeMira <jorge.mira.yague@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+wikitextparser = "^0.55.13"
+geopy = "^2.4.1"
+requests = "^2.32.3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+
+[tool.poetry.group.linters]
+optional = true
+
+[tool.poetry.group.linters.dependencies]
+ruff = "^0.6.0"
+mypy = "^1.11.1"
