@@ -45,6 +45,8 @@ OUTPUT_FILENAME: Final[str] = "{destination} ({language}) - Wikivoyage2KML"
 KML_EXTENSION: Final[str] = "kml"
 KMZ_EXTENSION: Final[str] = "kmz"
 WIKI_URL: Final[str] = "https://{language}.wikivoyage.org/w/api.php"
+KML_TEMPLATE: Final[str] = "templates/Wikivoyage2KML.kml"
+MARKER_TEMPLATE: Final[str] = "templates/Placemark.kml"
 MARKER_TYPES: Final[dict[str, MarkerType]] = {
     "do": MarkerType(color="teal", icon="Entertainment"),
     "go": MarkerType(color="brown", icon="Transport"),
@@ -57,25 +59,31 @@ MARKER_TYPES: Final[dict[str, MarkerType]] = {
 }
 
 
-def get_wikicode(destination: str, language: str) -> str:
+def get_wikicode(settings: Settings) -> str:
     """Get the wikicode of a wikivoyage article for the given destination"""
     try:
         response = requests.get(
-            WIKI_URL.format(language=language),
+            WIKI_URL.format(language=settings.language),
             params={
                 "action": "query",
                 "format": "json",
-                "titles": destination,
+                "titles": settings.destination,
                 "prop": "revisions",
                 "rvprop": "content",
             },
-        ).json()
+        )
     except ConnectionError:
-        sys.exit(f"Error trying to get page '{destination}' in https://{language}.wikivoyage.org/")
-
-    page = next(iter(response["query"]["pages"].values()))
+        sys.exit(
+            f"Error trying to get page '{settings.destination}' in "
+            f"https://{settings.language}.wikivoyage.org/"
+        )
+    data = response.json()
+    page = next(iter(data["query"]["pages"].values()))
     if "missing" in page:
-        sys.exit(f"Page for '{destination}' does not exist in https://{language}.wikivoyage.org/")
+        sys.exit(
+            f"Page for '{settings.destination}' does not exist in "
+            f"https://{settings.language}.wikivoyage.org/"
+        )
     wikicode = str(page["revisions"][0]["*"])
 
     return wikicode
@@ -89,11 +97,9 @@ def b(text: str) -> str:
     return f"<b>{text}</b>"
 
 
-def marker_to_kml(marker: dict[str, str]) -> str:
+def marker_to_kml(marker: dict[str, str], template: str) -> str:
     """Create KML code for a marker"""
     contents = []
-    with open("templates/Placemark.kml") as f:
-        tpl = f.read()
 
     # TODO: Fix images to get proper links
     # if 'image' in marker:
@@ -119,7 +125,7 @@ def marker_to_kml(marker: dict[str, str]) -> str:
         contents.append(marker["content"])
 
     marker_type = MARKER_TYPES[marker["type"]]
-    kml = tpl.format(
+    kml = template.format(
         name=marker["name"],
         description="<br/>".join(contents),
         color=marker_type.color,
@@ -142,9 +148,7 @@ def valid_coordinates(marker: dict[str, str]) -> bool:
     return True
 
 
-def extract_markers(
-    wikicode: str, destination: str, add_locations: bool = False
-) -> list[dict[str, str]]:
+def extract_markers(wikicode: str, settings: Settings) -> list[dict[str, str]]:
     """Extracts the markers for a given wikicode text"""
     parsed = wtp.parse(wikicode)
     markers = []
@@ -166,8 +170,8 @@ def extract_markers(
 
         if valid_coordinates(marker):
             markers.append(marker)
-        elif add_locations:
-            marker = add_location(marker, destination)
+        elif settings.add:
+            marker = add_location(marker, settings.destination)
             if valid_coordinates(marker):
                 markers.append(marker)
 
@@ -186,7 +190,6 @@ def add_location(marker: dict[str, str], destination: str) -> dict[str, str]:
             location = geolocator.geocode(query={"street": marker["address"], "city": destination})
         except GeocoderServiceError:
             print("Marker for '{}' not added because Nominatim error".format(marker["name"]))
-            time.sleep(10)  # Too many requests to Nominatim, taking a rest
 
         if location:  # Location found
             marker["long"] = str(location.longitude)
@@ -202,17 +205,20 @@ def add_location(marker: dict[str, str], destination: str) -> dict[str, str]:
     return marker
 
 
-def create_kml(destination: str, add_locations: bool, language: str) -> str:
+def create_kml(settings: Settings) -> str:
     """Creates the kml document for the given destination"""
-    wikicode = get_wikicode(destination, language)
-    markers = extract_markers(wikicode, destination, add_locations)
-    markers_kml = "\n".join(marker_to_kml(m) for m in markers)
+    wikicode = get_wikicode(settings)
 
-    with open("templates/Wikivoyage2KML.kml") as f:
-        tpl = f.read()
-    kml = tpl.format(name=destination, placemarks=markers_kml)
+    markers = extract_markers(wikicode, settings)
+    with open(MARKER_TEMPLATE) as f:
+        marker_template = f.read()
+    markers_kml = "\n".join(marker_to_kml(marker, marker_template) for marker in markers)
 
-    print(f"{len(markers)} markers added for destination: {destination}")
+    with open(KML_TEMPLATE) as f:
+        kml_template = f.read()
+    kml = kml_template.format(name=settings.destination, placemarks=markers_kml)
+
+    print(f"{len(markers)} markers added for destination: {settings.destination}")
 
     return kml
 
@@ -262,7 +268,7 @@ def save_kml(kml: str, settings: Settings) -> None:
 
 def main() -> None:
     settings = parse_settings()
-    kml = create_kml(settings.destination, settings.add, settings.language)
+    kml = create_kml(settings)
     save_kml(kml, settings)
 
 
