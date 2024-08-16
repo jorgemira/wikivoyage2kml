@@ -7,7 +7,7 @@ import html
 import os
 import sys
 import time
-from argparse import Namespace
+from dataclasses import dataclass
 from typing import Final
 from zipfile import ZipFile
 
@@ -26,20 +26,34 @@ __maintainer__ = "Jorge Mira"
 __email__ = "jorge.mira.yague@gmail.com"
 __status__ = "Dev"
 
+
+@dataclass
+class Settings:
+    destination: str
+    language: str
+    kmz: bool
+    add: bool
+
+
+@dataclass
+class MarkerType:
+    color: str
+    icon: str
+
+
 OUTPUT_FILENAME: Final[str] = "{destination} ({language}) - Wikivoyage2KML"
 KML_EXTENSION: Final[str] = "kml"
 KMZ_EXTENSION: Final[str] = "kmz"
 WIKI_URL: Final[str] = "https://{language}.wikivoyage.org/w/api.php"
-
-MARKER_TYPES = {
-    "do": {"color": "teal", "icon": "Entertainment"},
-    "go": {"color": "brown", "icon": "Transport"},
-    "buy": {"color": "pink", "icon": "Shop"},
-    "eat": {"color": "red", "icon": "Food"},
-    "see": {"color": "green", "icon": "Sights"},
-    "drink": {"color": "yellow", "icon": "Bar"},
-    "sleep": {"color": "blue", "icon": "Hotel"},
-    "default": {"color": "gray", "icon": "None"},
+MARKER_TYPES: Final[dict[str, MarkerType]] = {
+    "do": MarkerType(color="teal", icon="Entertainment"),
+    "go": MarkerType(color="brown", icon="Transport"),
+    "buy": MarkerType(color="pink", icon="Shop"),
+    "eat": MarkerType(color="red", icon="Food"),
+    "see": MarkerType(color="green", icon="Sights"),
+    "drink": MarkerType(color="yellow", icon="Bar"),
+    "sleep": MarkerType(color="blue", icon="Hotel"),
+    "default": MarkerType(color="gray", icon="None"),
 }
 
 
@@ -104,12 +118,13 @@ def marker_to_kml(marker: dict[str, str]) -> str:
         contents.append(b("Place description:"))
         contents.append(marker["content"])
 
+    marker_type = MARKER_TYPES[marker["type"]]
     kml = tpl.format(
         name=marker["name"],
         description="<br/>".join(contents),
-        color=MARKER_TYPES[marker["type"]]["color"],
+        color=marker_type.color,
         coordinates=marker["long"] + ", " + marker["lat"],
-        icon=MARKER_TYPES[marker["type"]]["icon"],
+        icon=marker_type.icon,
     )
 
     return kml
@@ -142,7 +157,7 @@ def extract_markers(
         mtype = t.name.strip()
         if mtype in ["marker", "listing"]:
             mtype = marker.get("type", "default")
-        if mtype not in list(MARKER_TYPES):
+        if mtype not in MARKER_TYPES:
             mtype = "default"
         marker["type"] = mtype
 
@@ -202,7 +217,7 @@ def create_kml(destination: str, add_locations: bool, language: str) -> str:
     return kml
 
 
-def parse_settings() -> Namespace:
+def parse_settings() -> Settings:
     """Create settings from command line parameters"""
     parser = argparse.ArgumentParser(
         description="Create KML/KMZ files for maps.me from Wikivoyage articles"
@@ -224,10 +239,14 @@ def parse_settings() -> Namespace:
         default="en",
         help="Language of the Wikivoyage article, defaults to 'en'",
     )
-    return parser.parse_args()
+
+    args = parser.parse_args()
+    return Settings(
+        destination=args.destination, language=args.language, kmz=args.kmz, add=args.add
+    )
 
 
-def save_kml(kml: str, settings: Namespace) -> None:
+def save_kml(kml: str, settings: Settings) -> None:
     """Write kml document into file"""
     filename = OUTPUT_FILENAME.format(destination=settings.destination, language=settings.language)
 
