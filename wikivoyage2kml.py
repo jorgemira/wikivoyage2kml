@@ -8,7 +8,7 @@ import os
 import sys
 import time
 from dataclasses import dataclass
-from typing import Final
+from typing import Final, NewType
 from zipfile import ZipFile
 
 import requests
@@ -40,6 +40,8 @@ class MarkerType:
     color: str
     icon: str
 
+
+Marker = NewType("Marker", dict[str, str])
 
 OUTPUT_FILENAME: Final[str] = "{destination} ({language}) - Wikivoyage2KML"
 KML_EXTENSION: Final[str] = "kml"
@@ -97,7 +99,7 @@ def b(text: str) -> str:
     return f"<b>{text}</b>"
 
 
-def marker_to_kml(marker: dict[str, str], template: str) -> str:
+def marker_to_kml(marker: Marker, template: str) -> str:
     """Create KML code for a marker"""
     contents = []
 
@@ -136,7 +138,7 @@ def marker_to_kml(marker: dict[str, str], template: str) -> str:
     return kml
 
 
-def valid_coordinates(marker: dict[str, str]) -> bool:
+def valid_coordinates(marker: Marker) -> bool:
     """Checks wether coordinates are valid: a number between 90 and -90 for latitude and -180 and
     180 for longitude"""
     try:
@@ -148,15 +150,15 @@ def valid_coordinates(marker: dict[str, str]) -> bool:
     return True
 
 
-def extract_markers(wikicode: str, settings: Settings) -> list[dict[str, str]]:
+def extract_markers(wikicode: str, settings: Settings) -> list[Marker]:
     """Extracts the markers for a given wikicode text"""
     parsed = wtp.parse(wikicode)
     markers = []
 
     for t in parsed.templates:
-        marker = {
-            a.name.strip(): html.escape(a.value.strip()) for a in t.arguments if a.value.strip()
-        }
+        marker = Marker(
+            {a.name.strip(): html.escape(a.value.strip()) for a in t.arguments if a.value.strip()}
+        )
 
         mtype = t.name.strip()
         if mtype in ["marker", "listing"]:
@@ -170,15 +172,13 @@ def extract_markers(wikicode: str, settings: Settings) -> list[dict[str, str]]:
 
         if valid_coordinates(marker):
             markers.append(marker)
-        elif settings.add:
-            marker = add_location(marker, settings.destination)
-            if valid_coordinates(marker):
-                markers.append(marker)
+        elif settings.add and (marker_with_location := add_location(marker, settings.destination)):
+            markers.append(marker_with_location)
 
     return markers
 
 
-def add_location(marker: dict[str, str], destination: str) -> dict[str, str]:
+def add_location(marker: Marker, destination: str) -> Marker | None:
     """Try to add GPS coordinates to a marker in the given destination from Nominatim"""
     geolocator = Nominatim(user_agent="wikivoyage2klm")
     location = None
@@ -192,17 +192,21 @@ def add_location(marker: dict[str, str], destination: str) -> dict[str, str]:
             print("Marker for '{}' not added because Nominatim error".format(marker["name"]))
 
         if location:  # Location found
-            marker["long"] = str(location.longitude)
-            marker["lat"] = str(location.latitude)
-            marker["added_location"] = "yes"
-            print("Marker for '{}' added using automatic location".format(marker["name"]))
+            new_marker = Marker(dict(marker))
+            new_marker["long"] = str(location.longitude)
+            new_marker["lat"] = str(location.latitude)
+            new_marker["added_location"] = "yes"
+            if valid_coordinates(new_marker):
+                print("Marker for '{}' added using automatic location".format(new_marker["name"]))
+                return new_marker
+            else:
+                print("Marker for '{}' has invalid coordinates".format(new_marker["name"]))
         else:
             print("Marker for '{}' could not be found on Nominatim".format(marker["name"]))
-
     else:
         print("Marker for '{}' Not added because address is missing".format(marker["name"]))
 
-    return marker
+    return None
 
 
 def create_kml(settings: Settings) -> str:
@@ -210,6 +214,15 @@ def create_kml(settings: Settings) -> str:
     wikicode = get_wikicode(settings)
 
     markers = extract_markers(wikicode, settings)
+
+    m0 = markers[0]
+    print(m0)
+    m1 = Marker(dict(m0))
+    print(m1)
+    m1["name"] = "ohio"
+    print(m0)
+    print(m1)
+
     with open(MARKER_TEMPLATE) as f:
         marker_template = f.read()
     markers_kml = "\n".join(marker_to_kml(marker, marker_template) for marker in markers)
