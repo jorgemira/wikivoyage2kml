@@ -25,9 +25,9 @@ __maintainer__ = "Jorge Mira"
 __email__ = "jorge.mira.yague@gmail.com"
 __status__ = "Dev"
 
-OUTPUT_KML = "{dest} ({lang}) - Wikivoyage2KML.kml"
-OUTPUT_KMZ = "{dest} ({lang}) - Wikivoyage2KML.kmz"
-WIKI_URL = "https://{lang}.wikivoyage.org/w/api.php"
+OUTPUT_KML = "{destination} ({language}) - Wikivoyage2KML.kml"
+OUTPUT_KMZ = "{destination} ({language}) - Wikivoyage2KML.kmz"
+WIKI_URL = "https://{language}.wikivoyage.org/w/api.php"
 
 MARKER_TYPES = {
     "do": {"color": "teal", "icon": "Entertainment"},
@@ -41,63 +41,45 @@ MARKER_TYPES = {
 }
 
 
-def get_ts():
-    """Get current timestamp in %Y-%m-%dT%H:%M:%SZ format
-
-    :return:
-    :rtype: str
-    """
+def get_ts() -> str:
+    """Get current timestamp in %Y-%m-%dT%H:%M:%SZ format"""
     return datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def get_wikicode(dest, lang):
-    """Get the wikicode of a wikivoyage article for the given destination
-
-    :param dest: destination
-    :type dest: str
-    :param lang: language on ISO 639-1 format
-    :type lang: str
-    :return:
-    :rtype: str
-    """
+def get_wikicode(destination: str, language: str) -> str:
+    """Get the wikicode of a wikivoyage article for the given destination"""
     try:
         response = requests.get(
-            WIKI_URL.format(lang=lang),
+            WIKI_URL.format(language=language),
             params={
                 "action": "query",
                 "format": "json",
-                "titles": dest,
+                "titles": destination,
                 "prop": "revisions",
                 "rvprop": "content",
             },
         ).json()
     except ConnectionError:
-        sys.exit(f"Error trying to get page '{dest}' in https://{lang}.wikivoyage.org/")
+        sys.exit(f"Error trying to get page '{destination}' in https://{language}.wikivoyage.org/")
 
     page = next(iter(response["query"]["pages"].values()))
     if "missing" in page:
-        sys.exit(f"Page for '{dest}' does not exisit in https://{lang}.wikivoyage.org/")
-    wikicode = page["revisions"][0]["*"]
+        sys.exit(f"Page for '{destination}' does not exisit in https://{language}.wikivoyage.org/")
+    wikicode = str(page["revisions"][0]["*"])
 
     return wikicode
 
 
-def a(href, text):
+def a(href: str, text: str) -> str:
     return f"<a href='{href}'>{text}</a>"
 
 
-def b(text):
+def b(text: str) -> str:
     return f"<b>{text}</b>"
 
 
-def marker_to_kml(marker):
-    """Create KML code for a marker
-
-    :param marker:
-    :type: dict[str, str]
-    :return:
-    :rtype: str
-    """
+def marker_to_kml(marker: dict[str, str]) -> str:
+    """Create KML code for a marker"""
     contents = []
     with open("templates/Placemark.kml") as f:
         tpl = f.read()
@@ -137,15 +119,9 @@ def marker_to_kml(marker):
     return kml
 
 
-def valid_coordinates(marker):
+def valid_coordinates(marker: dict[str, str]) -> bool:
     """Checks wether coordinates are valid: a number between 90 and -90 for latitude and -180 and
-    180 for longitude
-
-    :param marker:
-    :type marker: dict[str, str]
-    :return:
-    :rtype: bool
-    """
+    180 for longitude"""
     try:
         if abs(float(marker["long"])) > 180 or abs(float(marker["lat"])) > 90:
             raise ValueError
@@ -155,18 +131,10 @@ def valid_coordinates(marker):
     return True
 
 
-def extract_markers(wikicode, dest, add_locations=False):
-    """Extracts the markers for a given wikicode text
-
-    :param wikicode: wikicode text
-    :type wikicode: str
-    :param dest: destination name
-    :type dest: str destination city on wikivoyage
-    :param add_locations: try to get locations from Nominatim for markers that don't have them
-    :type add_locations: bool
-    :return: list of markers
-    :rtype: list[dict[str, str]]
-    """
+def extract_markers(
+    wikicode: str, destination: str, add_locations: bool = False
+) -> list[dict[str, str]]:
+    """Extracts the markers for a given wikicode text"""
     parsed = wtp.parse(wikicode)
     markers = []
 
@@ -188,23 +156,15 @@ def extract_markers(wikicode, dest, add_locations=False):
         if valid_coordinates(marker):
             markers.append(marker)
         elif add_locations:
-            marker = add_location(marker, dest)
+            marker = add_location(marker, destination)
             if valid_coordinates(marker):
                 markers.append(marker)
 
     return markers
 
 
-def add_location(marker, dest):
-    """Try to add GPS coordinates to a marker in the given destination from Nominatim
-
-    :param marker: dictionary containing information of a pin on the map
-    :type marker: dict[str, str]
-    :param dest: destination to help with the Nominatim query
-    :type dest: str
-    :return: the marker with the coordinates updated if any was found
-    :rtype marker: dict[str, str]
-    """
+def add_location(marker: dict[str, str], destination: str) -> dict[str, str]:
+    """Try to add GPS coordinates to a marker in the given destination from Nominatim"""
     geolocator = Nominatim(user_agent="wikivoyage2klm")
     location = None
 
@@ -212,7 +172,7 @@ def add_location(marker, dest):
         time.sleep(1)  # Comply with Nominatim usage policy of one request per second
 
         try:
-            location = geolocator.geocode(query={"street": marker["address"], "city": dest})
+            location = geolocator.geocode(query={"street": marker["address"], "city": destination})
         except GeocoderServiceError:
             print("Marker for '{}' not added because Nominatim error".format(marker["name"]))
             time.sleep(10)  # Too many requests to Nominatim, taking a rest
@@ -231,32 +191,22 @@ def add_location(marker, dest):
     return marker
 
 
-def create_kml(dest, add_locations, lang):
-    """Creates the kml document for the given destination
-
-    :param dest: wikivoyage destination
-    :type dest: str
-    :param add_locations: try to get locations from Nominatim for markers that don't have them
-    :type add_locations: bool
-    :param lang: language for the wikivoyage article
-    :type lang: str
-    :return: string containing the kml document
-    :rtype: str
-    """
-    wikicode = get_wikicode(dest, lang)
-    markers = extract_markers(wikicode, dest, add_locations)
+def create_kml(destination: str, add_locations: bool, language: str) -> str:
+    """Creates the kml document for the given destination"""
+    wikicode = get_wikicode(destination, language)
+    markers = extract_markers(wikicode, destination, add_locations)
     markers_kml = "\n".join(marker_to_kml(m) for m in markers)
 
     with open("templates/Wikivoyage2KML.kml") as f:
         tpl = f.read()
-    kml = tpl.format(name=dest, timestamp=get_ts(), placemarks=markers_kml)
+    kml = tpl.format(name=destination, timestamp=get_ts(), placemarks=markers_kml)
 
-    print(f"{len(markers)} markers added for destination: {dest}")
+    print(f"{len(markers)} markers added for destination: {destination}")
 
     return kml
 
 
-def main():
+def main() -> None:
     # Args parsing
     parser = argparse.ArgumentParser(
         description="Create KML/KMZ files for maps.me from Wikivoyage articles"
@@ -283,13 +233,15 @@ def main():
     kml = create_kml(args.destination, args.add, args.language)
 
     # Output to KML
-    kml_file = OUTPUT_KML.format(dest=args.destination, lang=args.language)
+    kml_file = OUTPUT_KML.format(destination=args.destination, language=args.language)
     with open(kml_file, "w") as f:
         f.write(kml)
 
     # Output to KMZ
     if args.kmz:
-        with ZipFile(OUTPUT_KMZ.format(dest=args.destination, lang=args.language), "w") as zfile:
+        with ZipFile(
+            OUTPUT_KMZ.format(destination=args.destination, language=args.language), "w"
+        ) as zfile:
             zfile.write(kml_file)
         os.remove(kml_file)
 
