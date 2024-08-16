@@ -123,7 +123,6 @@
     </mwm:annotation>
     <mwm:description>
     </mwm:description>
-    <mwm:lastModified>{timestamp}</mwm:lastModified>
     <mwm:accessRules>Local</mwm:accessRules>
   </ExtendedData>
   {placemarks}

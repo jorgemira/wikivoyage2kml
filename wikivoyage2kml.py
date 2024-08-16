@@ -3,7 +3,6 @@
 """Wikivoyage2KML: Script to generate kml/kmz files for maps.me from Wikivoyage articles"""
 
 import argparse
-import datetime
 import html
 import os
 import sys
@@ -39,11 +38,6 @@ MARKER_TYPES = {
     "sleep": {"color": "blue", "icon": "Hotel"},
     "default": {"color": "gray", "icon": "None"},
 }
-
-
-def get_ts() -> str:
-    """Get current timestamp in %Y-%m-%dT%H:%M:%SZ format"""
-    return datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def get_wikicode(destination: str, language: str) -> str:
@@ -110,7 +104,6 @@ def marker_to_kml(marker: dict[str, str]) -> str:
     kml = tpl.format(
         name=marker["name"],
         description="<br/>".join(contents),
-        timestamp=get_ts(),
         color=MARKER_TYPES[marker["type"]]["color"],
         coordinates=marker["long"] + ", " + marker["lat"],
         icon=MARKER_TYPES[marker["type"]]["icon"],
@@ -199,7 +192,7 @@ def create_kml(destination: str, add_locations: bool, language: str) -> str:
 
     with open("templates/Wikivoyage2KML.kml") as f:
         tpl = f.read()
-    kml = tpl.format(name=destination, timestamp=get_ts(), placemarks=markers_kml)
+    kml = tpl.format(name=destination, placemarks=markers_kml)
 
     print(f"{len(markers)} markers added for destination: {destination}")
 

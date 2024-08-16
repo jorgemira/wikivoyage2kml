@@ -1,7 +1,6 @@
   <Placemark>
     <name>{name}</name>
     <description><![CDATA[{description}]]></description>
-    <TimeStamp><when>{timestamp}</when></TimeStamp>
     <styleUrl>#placemark-{color}</styleUrl>
     <Point><coordinates>{coordinates}</coordinates></Point>
     <ExtendedData xmlns:mwm="https://maps.me">
