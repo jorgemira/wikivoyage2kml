@@ -24,17 +24,17 @@ poetry shell
 python wikivoyage2kml.py -h
     usage: wikivoyage2kml.py [-h] [-z] [-a] [-l LANGUAGE] destination
 
-    Create KML files for maps.me from Wikivoyage articles
-    
+    Create KML/KMZ files for maps.me from Wikivoyage articles
+
     positional arguments:
       destination           Destination name
-    
-    optional arguments:
+
+    options:
       -h, --help            show this help message and exit
       -z, --kmz             Save output to KMZ format
       -a, --add             Add missing locations
       -l LANGUAGE, --language LANGUAGE
-                            Language code of the Wikivoyage article, defaults to 'en'
+                            Language of the Wikivoyage article, defaults to 'en'
 ```
 
 ## Contributing
