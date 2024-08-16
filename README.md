@@ -4,17 +4,18 @@ Script to create a KML/KMZ files with markers for a city from Wikivoyage article
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. 
+These instructions will get you a copy of the project up and running on your local machine for 
+development and testing purposes. 
 
 ## Installation
 
-Get source code, update the necessary libs using pipenv and you're set!
+Get source code, update the necessary libs using poetry and you're set!
 
 ```bash
 git clone https://github.com/jorgemira/wikivoyage2kml
 cd wikivoyage2kml
-pipenv sync
-pipenv shell
+poetry install
+poetry shell
 ```
 
 ## Usage
@@ -33,11 +34,12 @@ python wikivoyage2kml.py -h
       -z, --kmz             Save output to KMZ format
       -a, --add             Add missing locations
       -l LANGUAGE, --language LANGUAGE
-                            Language of the Wikivoyage article
+                            Language code of the Wikivoyage article, defaults to 'en'
 ```
 
 ## Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would 
+like to change.
 
 Please make sure to update tests as appropriate.
 
