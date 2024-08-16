@@ -7,6 +7,7 @@ import html
 import os
 import sys
 import time
+from typing import Final
 from zipfile import ZipFile
 
 import requests
@@ -24,9 +25,10 @@ __maintainer__ = "Jorge Mira"
 __email__ = "jorge.mira.yague@gmail.com"
 __status__ = "Dev"
 
-OUTPUT_KML = "{destination} ({language}) - Wikivoyage2KML.kml"
-OUTPUT_KMZ = "{destination} ({language}) - Wikivoyage2KML.kmz"
-WIKI_URL = "https://{language}.wikivoyage.org/w/api.php"
+OUTPUT_FILENAME: Final[str] = "{destination} ({language}) - Wikivoyage2KML"
+KML_EXTENSION: Final[str] = "kml"
+KMZ_EXTENSION: Final[str] = "kmz"
+WIKI_URL: Final[str] = "https://{language}.wikivoyage.org/w/api.php"
 
 MARKER_TYPES = {
     "do": {"color": "teal", "icon": "Entertainment"},
@@ -225,18 +227,18 @@ def main() -> None:
 
     kml = create_kml(args.destination, args.add, args.language)
 
+    filename = OUTPUT_FILENAME.format(destination=args.destination, language=args.language)
+
     # Output to KML
-    kml_file = OUTPUT_KML.format(destination=args.destination, language=args.language)
-    with open(kml_file, "w") as f:
-        f.write(kml)
+    kml_file_name = f"{filename}.{KML_EXTENSION}"
+    with open(kml_file_name, "w") as file:
+        file.write(kml)
 
     # Output to KMZ
     if args.kmz:
-        with ZipFile(
-            OUTPUT_KMZ.format(destination=args.destination, language=args.language), "w"
-        ) as zfile:
-            zfile.write(kml_file)
-        os.remove(kml_file)
+        with ZipFile(f"{filename}.{KMZ_EXTENSION}", "w") as zfile:
+            zfile.write(kml_file_name)
+        os.remove(kml_file_name)
 
 
 if __name__ == "__main__":
