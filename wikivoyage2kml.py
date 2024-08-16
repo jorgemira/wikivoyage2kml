@@ -58,7 +58,7 @@ def get_wikicode(destination: str, language: str) -> str:
 
     page = next(iter(response["query"]["pages"].values()))
     if "missing" in page:
-        sys.exit(f"Page for '{destination}' does not exisit in https://{language}.wikivoyage.org/")
+        sys.exit(f"Page for '{destination}' does not exist in https://{language}.wikivoyage.org/")
     wikicode = str(page["revisions"][0]["*"])
 
     return wikicode
