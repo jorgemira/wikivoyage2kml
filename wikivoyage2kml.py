@@ -7,6 +7,7 @@ import html
 import os
 import sys
 import time
+from argparse import Namespace
 from typing import Final
 from zipfile import ZipFile
 
@@ -201,8 +202,8 @@ def create_kml(destination: str, add_locations: bool, language: str) -> str:
     return kml
 
 
-def main() -> None:
-    # Args parsing
+def parse_settings() -> Namespace:
+    """Create settings from command line parameters"""
     parser = argparse.ArgumentParser(
         description="Create KML/KMZ files for maps.me from Wikivoyage articles"
     )
@@ -221,24 +222,29 @@ def main() -> None:
         "-l",
         "--language",
         default="en",
-        help="Language of the Wikivoyage article, defaults to en",
+        help="Language of the Wikivoyage article, defaults to 'en'",
     )
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    kml = create_kml(args.destination, args.add, args.language)
 
-    filename = OUTPUT_FILENAME.format(destination=args.destination, language=args.language)
+def save_kml(kml: str, settings: Namespace) -> None:
+    """Write kml document into file"""
+    filename = OUTPUT_FILENAME.format(destination=settings.destination, language=settings.language)
 
-    # Output to KML
     kml_file_name = f"{filename}.{KML_EXTENSION}"
     with open(kml_file_name, "w") as file:
         file.write(kml)
 
-    # Output to KMZ
-    if args.kmz:
+    if settings.kmz:
         with ZipFile(f"{filename}.{KMZ_EXTENSION}", "w") as zfile:
             zfile.write(kml_file_name)
         os.remove(kml_file_name)
+
+
+def main() -> None:
+    settings = parse_settings()
+    kml = create_kml(settings.destination, settings.add, settings.language)
+    save_kml(kml, settings)
 
 
 if __name__ == "__main__":
