@@ -214,15 +214,6 @@ def create_kml(settings: Settings) -> str:
     wikicode = get_wikicode(settings)
 
     markers = extract_markers(wikicode, settings)
-
-    m0 = markers[0]
-    print(m0)
-    m1 = Marker(dict(m0))
-    print(m1)
-    m1["name"] = "ohio"
-    print(m0)
-    print(m1)
-
     with open(MARKER_TEMPLATE) as f:
         marker_template = f.read()
     markers_kml = "\n".join(marker_to_kml(marker, marker_template) for marker in markers)
