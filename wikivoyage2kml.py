@@ -47,7 +47,7 @@ KML_EXTENSION: Final[str] = "kml"
 KMZ_EXTENSION: Final[str] = "kmz"
 WIKI_URL: Final[str] = "https://{language}.wikivoyage.org/w/api.php"
 KML_TEMPLATE: Final[str] = "templates/Wikivoyage2KML.kml"
-MARKER_TEMPLATE: Final[str] = "templates/Placemark.kml"
+MARKER_TEMPLATE: Final[str] = "templates/Marker.kml"
 MARKER_TYPES: Final[dict[str, MarkerType]] = {
     "do": MarkerType(color="teal", icon="Entertainment"),
     "go": MarkerType(color="brown", icon="Transport"),
@@ -151,17 +151,21 @@ def extract_markers(wikicode: str, settings: Settings) -> list[Marker]:
     parsed = wtp.parse(wikicode)
     markers = []
 
-    for t in parsed.templates:
+    for template in parsed.templates:
         marker = Marker(
-            {a.name.strip(): html.escape(a.value.strip()) for a in t.arguments if a.value.strip()}
+            {
+                argument.name.strip(): html.escape(argument.value.strip())
+                for argument in template.arguments
+                if argument.value.strip()
+            }
         )
 
-        mtype = t.name.strip()
-        if mtype in ["marker", "listing"]:
-            mtype = marker.get("type", "default")
-        if mtype not in MARKER_TYPES:
-            mtype = "default"
-        marker["type"] = mtype
+        type_ = template.name.strip()
+        if type_ in ["marker", "listing"]:
+            type_ = marker.get("type", "default")
+        if type_ not in MARKER_TYPES:
+            type_ = "default"
+        marker["type"] = type_
 
         if "name" not in marker:  # Discard invalid markers
             continue
@@ -216,7 +220,7 @@ def create_kml(settings: Settings) -> str:
 
     with open(KML_TEMPLATE) as f:
         kml_template = f.read()
-    kml = kml_template.format(name=settings.destination, placemarks=markers_kml)
+    kml = kml_template.format(name=settings.destination, markers=markers_kml)
 
     print(f"{len(markers)} markers added for destination: {settings.destination}")
 
