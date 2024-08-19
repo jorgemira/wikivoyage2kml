@@ -139,7 +139,7 @@ def valid_coordinates(marker: Marker) -> bool:
     180 for longitude"""
     try:
         if abs(float(marker["long"])) > 180 or abs(float(marker["lat"])) > 90:
-            raise ValueError
+            return False
     except (KeyError, ValueError):
         return False
 
