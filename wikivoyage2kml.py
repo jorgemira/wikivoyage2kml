@@ -62,6 +62,7 @@ MARKER_TYPES: Final[dict[str, MarkerType]] = {
 
 def get_wikicode(settings: Settings) -> str:
     """Get the wikicode of a wikivoyage article for the given destination"""
+
     try:
         response = requests.get(
             WIKI_URL.format(language=settings.language),
@@ -100,6 +101,7 @@ def b(text: str) -> str:
 
 def marker_to_kml(marker: Marker, template: str) -> str:
     """Create KML code for a marker"""
+
     contents = []
 
     if "added_location" in marker:
@@ -137,6 +139,7 @@ def marker_to_kml(marker: Marker, template: str) -> str:
 def valid_coordinates(marker: Marker) -> bool:
     """Checks wether coordinates are valid: a number between 90 and -90 for latitude and -180 and
     180 for longitude"""
+
     try:
         if abs(float(marker["long"])) > 180 or abs(float(marker["lat"])) > 90:
             return False
@@ -148,6 +151,7 @@ def valid_coordinates(marker: Marker) -> bool:
 
 def extract_markers(wikicode: str, settings: Settings) -> list[Marker]:
     """Extracts the markers for a given wikicode text"""
+
     parsed = wtp.parse(wikicode)
     markers = []
 
@@ -180,6 +184,7 @@ def extract_markers(wikicode: str, settings: Settings) -> list[Marker]:
 
 def add_location(marker: Marker, destination: str) -> Marker | None:
     """Try to add GPS coordinates to a marker in the given destination from Nominatim"""
+
     geolocator = Nominatim(user_agent="wikivoyage2klm")
     location = None
 
@@ -211,6 +216,7 @@ def add_location(marker: Marker, destination: str) -> Marker | None:
 
 def create_kml(settings: Settings) -> str:
     """Creates the kml document for the given destination"""
+
     wikicode = get_wikicode(settings)
 
     markers = extract_markers(wikicode, settings)
@@ -229,6 +235,7 @@ def create_kml(settings: Settings) -> str:
 
 def parse_settings() -> Settings:
     """Create settings from command line parameters"""
+
     parser = argparse.ArgumentParser(
         description="Create KML/KMZ files for maps.me from Wikivoyage articles"
     )
@@ -258,6 +265,7 @@ def parse_settings() -> Settings:
 
 def save_kml(kml: str, settings: Settings) -> None:
     """Write kml document into file"""
+
     filename = OUTPUT_FILENAME.format(destination=settings.destination, language=settings.language)
 
     kml_file_name = f"{filename}.{KML_EXTENSION}"
