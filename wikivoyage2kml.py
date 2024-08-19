@@ -102,9 +102,6 @@ def marker_to_kml(marker: Marker, template: str) -> str:
     """Create KML code for a marker"""
     contents = []
 
-    # TODO: Fix images to get proper links
-    # if 'image' in marker:
-    #     contents.append("<img src='{img}'></img>".format(img=marker['image']))
     if "added_location" in marker:
         contents.append(
             b("WARNING: ") + "Location has been added automatically, marker may not be correct"
