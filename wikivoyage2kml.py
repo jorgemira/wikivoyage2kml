@@ -15,7 +15,6 @@ import requests
 import wikitextparser as wtp
 from geopy.exc import GeocoderServiceError
 from geopy.geocoders import Nominatim
-from requests.exceptions import ConnectionError
 
 __author__ = "Jorge Mira"
 __copyright__ = "Copyright 2020"
@@ -74,7 +73,7 @@ def get_wikicode(settings: Settings) -> str:
                 "rvprop": "content",
             },
         )
-    except ConnectionError:
+    except requests.ConnectionError:
         sys.exit(
             f"Error trying to get page '{settings.destination}' in "
             f"https://{settings.language}.wikivoyage.org/"
