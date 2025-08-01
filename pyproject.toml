@@ -9,7 +9,7 @@ readme = "README.md"
 python = "^3.12"
 wikitextparser = "^0.55.13"
 geopy = "^2.4.1"
-requests = "^2.32.3"
+requests = "^2.32.4"
 
 [build-system]
 requires = ["poetry-core"]
